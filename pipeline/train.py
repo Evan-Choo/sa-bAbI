@@ -114,7 +114,7 @@ def run_experiments(num_experiments=10, models_dir=None):
             validation_data=data_generator.generate_balanced(
                 partition['validation']),
             validation_steps=validation_steps,
-            epochs=18)
+            epochs=150)
 
         # predict
         predics = model.predict([val_instances_mat, val_queries_mat])
@@ -168,4 +168,4 @@ def run_experiments(num_experiments=10, models_dir=None):
     print(np.mean(f1_scores))
 
 
-run_experiments(num_experiments=10, models_dir=constants.MODELS_DIR)
+run_experiments(num_experiments=5, models_dir=constants.MODELS_DIR)

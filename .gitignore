@@ -17,5 +17,9 @@ Thumbs.db
 .idea/
 
 # Ignore generated src,token
-working/sa-train-10000/src
-working/sa-train-10000/tokens
+working/sa-train-10000
+working/sa-test-trueC
+!working/sa-train-10000/vocab.pkl
+!working/sa-train-10000/models
+!working/sa-train-10000/src
+!working/sa-train-10000/result.png

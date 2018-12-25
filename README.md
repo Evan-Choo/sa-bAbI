@@ -1,10 +1,14 @@
-This repository contains code for sa-bAbI code generator.
+This repository contains code for sa-bAbI code generator and for open source code tranformation.
+
+Our team project is based on cmu-sei/sa-bAbi. We add 5 kinds of new vulnerabilities and try applying the model to some transformed open source code.
 
 Contributors:
-* Carson Sestili
-* Will Snavely
-* Ben Cohen
-* Nathan VanHoudnos nmvanhoudnos NEAR cert FULL STOP org
+* [caozixuan](https://github.com/caozixuan)
+* [Endless-Fighting](https://github.com/Endless-Fighting)
+* [rsy56640](https://github.com/rsy56640)
+* [Evan-Choo](https://github.com/Evan-Choo)
+* [RickyZhang1998](https://github.com/RickyZhang1998)
+* [YINNNER](https://github.com/YINNNER)
 
 # Quickstart
 A minimal example to get you an end to end analysis of generated code.
@@ -78,12 +82,14 @@ any Linux-like system (including Mac), assuming the following are present:
 4) realpath (obtainable through the coreutils homebrew package on Mac)
 
 ## Building
+
 The necessary docker images can be built with
 ```
 docker-compose build
 ```
 
 ### Running the SA Pipeline
+
 The `sa_e2e.sh` script runs the tool pipeline end-to-end. The usage
 for this script is:
 ```
@@ -108,60 +114,7 @@ by setting the `SA_SEED` environment variable, e.g.
 SA_SEED=10 bash sa_e2e.sh <working_dir> <num_instances>
 ```
 
-### Running the Juliet Pipeline
-Tools can be run against a subset of the Juliet testsuite using
-the `juliet_run_tools.sh` script. Usage:
-```
-bash juliet_run_tools.sh <working_dir>
-```
-Where `<working_dir>` is a local directory where outputs will be stored.
-The outputs in this directory are very similar to those for the SA pipeline,
-save no "sound" confusion matrix is generated.
-
-
-# Changelog
-
 ## Version 0.1
 
 Initial release
-# Document markings
-```
-# sa-bAbI: An automated software assurance code dataset generator
-# 
-# Copyright 2018 Carnegie Mellon University. All Rights Reserved.
-#
-# NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
-# ENGINEERING INSTITUTE MATERIAL IS FURNISHED ON AN "AS-IS" BASIS.
-# CARNEGIE MELLON UNIVERSITY MAKES NO WARRANTIES OF ANY KIND, EITHER
-# EXPRESSED OR IMPLIED, AS TO ANY MATTER INCLUDING, BUT NOT LIMITED
-# TO, WARRANTY OF FITNESS FOR PURPOSE OR MERCHANTABILITY, EXCLUSIVITY,
-# OR RESULTS OBTAINED FROM USE OF THE MATERIAL. CARNEGIE MELLON
-# UNIVERSITY DOES NOT MAKE ANY WARRANTY OF ANY KIND WITH RESPECT TO
-# FREEDOM FROM PATENT, TRADEMARK, OR COPYRIGHT INFRINGEMENT.
-#
-# Released under a MIT (SEI)-style license, please see license.txt or
-# contact permission@sei.cmu.edu for full terms.
-#
-# [DISTRIBUTION STATEMENT A] This material has been approved for
-# public release and unlimited distribution. Please see Copyright
-# notice for non-US Government use and distribution.
-# 
-# Carnegie Mellon (R) and CERT (R) are registered in the U.S. Patent
-# and Trademark Office by Carnegie Mellon University.
-#
-# This Software includes and/or makes use of the following Third-Party
-# Software subject to its own license:
-# 1. clang (http://llvm.org/docs/DeveloperPolicy.html#license)
-#     Copyright 2018 University of Illinois at Urbana-Champaign.
-# 2. frama-c (https://frama-c.com/download.html) Copyright 2018
-#     frama-c team.
-# 3. Docker (https://www.apache.org/licenses/LICENSE-2.0.html)
-#     Copyright 2004 Apache Software Foundation.
-# 4. cppcheck (http://cppcheck.sourceforge.net/) Copyright 2018
-#     cppcheck team.
-# 5. Python 3.6 (https://docs.python.org/3/license.html) Copyright
-#     2018 Python Software Foundation.
-# 
-# DM18-0995
-# 
-```
+

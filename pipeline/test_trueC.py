@@ -20,11 +20,14 @@ import validate
 from sa_babi.sa_tag import Tag
 
 
-MAX_LINES = 35
-MAX_TOKENS = 16
-
-
 def get_tok_fnames(working_dir):
+    """Get the list of the paths of *.c.tok files
+
+    Args:
+        working_dir: dir path where *.c.tok files are located
+    Returns:
+    	path_list: the list of the paths of *.c.tok files
+    """
     fname_suffix = ".c.tok"
     tok_dir = os.path.join(working_dir,'tokens')
     contents = sorted(os.listdir(tok_dir))
@@ -45,8 +48,15 @@ def get_memnet_predics(working_dir, models_dir, fnames=None, line_num=None):
             if None, then get them for all validation files
         line_num (int): line number to predict
             if None, then get predictions for all lines
+    Returns: (only test one line query)
+        y_true_list: the list of true labels of the query lines
+        predict_list:  the list of the predict labels of the query lines
+        line_num_list:  the list of the query line numbers
     """
+    # load data
     inst, lab, _, part, paths = utils.load_data(working_dir)
+
+    # get trained model
     models = validate.get_models(models_dir)
 
     if fnames is None:
@@ -87,13 +97,10 @@ def get_memnet_predics(working_dir, models_dir, fnames=None, line_num=None):
         print("Querying {} lines".format(num_queries))
 
         # get data matrices
-        (instances_mat, queries_mat), labels_mat = (
-            val_data_generator.get_test_c_samples([file_num])
-        )
-        #instances_mat, queries_mat = get_padded_matrices(instances_mat, labels_mat, queries_mat)
+        (instances_mat, queries_mat), labels_mat = (val_data_generator.get_test_c_samples([file_num]))
+
         y_true = np.argmax(labels_mat, axis=1)
         y_true_list.append(y_true)
-
 
         # get predictions
         separate_predics = []
@@ -103,60 +110,25 @@ def get_memnet_predics(working_dir, models_dir, fnames=None, line_num=None):
             separate_predics.append(predic)
 
         # convert to labels
-        separate_predics = [np.argmax(y_pred, axis=1) for y_pred in
-                            separate_predics]
+        separate_predics = [np.argmax(y_pred, axis=1) for y_pred in separate_predics]
         predict_list.append(separate_predics)
 
     return y_true_list, predict_list, line_num_list
 
-def get_padded_matrices(instances, labels, queries):
-    """Convert examples to 0-padded numpy arrays
-
-    Args:
-        instances (list): as returned from get_examples()
-        labels (list): as returned from get_examples()
-
-    Returns:
-        instances_mat (np.ndarray) [num_examples, max_numlines, max_linelen]
-        labels_mat (np.ndarray) [num_examples, max_numlines]
-            labels_mat[i][j] is the i-th CWE121 C example, j-th line
-                0 for "no label" if that example did not have max num lines
-                1 if it is not labeled as CWE121,
-                2 if it is labeled as CWE121
-    """
-    num_instances = instances.shape[0]
-    num_queries = queries.shape[0]
-    instances_mat = np.zeros((num_instances, MAX_LINES, MAX_TOKENS), dtype='int32')
-    #labels_mat = np.zeros((num_instances, datagen.SA_TAG_NUM), dtype='int32')
-    queries_mat = np.zeros((num_queries, 1, MAX_TOKENS), dtype='int32')
-
-    # word mapping, with rank-3 padding
-    for instance_idx, instance in enumerate(instances):
-        for line_idx, line in enumerate(instance):
-            for tok_idx, tok in enumerate(line):
-                instances_mat[instance_idx][line_idx][tok_idx] = instances[instance_idx][line_idx][tok_idx]
-
-    for instance_idx, instance in enumerate(queries):
-        for line_idx, line in enumerate(instance):
-            for tok_idx, tok in enumerate(line):
-                queries_mat[instance_idx][line_idx][tok_idx] = queries[instance_idx][line_idx][tok_idx]
-
-    return instances_mat, queries_mat
 
 if __name__ == '__main__':
     test_dir = 'sa-test-trueC'
-    working_dir = os.path.join(constants.VALIDATION_WORKING_PARENT_DIR,
-                               test_dir)
+    working_dir = os.path.join(constants.VALIDATION_WORKING_PARENT_DIR, test_dir)
     tok_dir = os.path.join(working_dir, 'tokens')
-    utils.generate_true_c_sa_data(working_dir=working_dir, tok_dir=tok_dir)  # Hack to generate data
+
+    # generate sa_data from true c code
+    utils.generate_true_c_sa_data(working_dir=working_dir, tok_dir=tok_dir)
 
     models_dir = os.path.join(constants.VALIDATION_MODELS_PARENT_DIR,
                               constants.VALIDATION_MODELS_SUBDIRS[-1])
-    predics_subdir = os.path.join(constants.VALIDATION_PREDICS_PARENT_DIR,
-                                  constants.VALIDATION_PREDICS_SUBDIRS[-1])
-
     tok_fnames = get_tok_fnames(working_dir)
 
+    # predict
     labels, predics, line_list = get_memnet_predics(working_dir, models_dir, fnames=tok_fnames)
     result_tuple_list = []
 
@@ -176,6 +148,7 @@ if __name__ == '__main__':
         predict_count = np.bincount(predict_list[index])
         predict_result.append(Tag(np.argmax(predict_count)+2))
 
+    # print result
     print("Results are: ")
     for index, file in enumerate(tok_fnames):
         print("file {0}, querying line {1}, true label is {2}, predict label is {3}.".format(

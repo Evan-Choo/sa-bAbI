@@ -145,7 +145,7 @@ def generate_choi_data(working_dir=constants.WORKING_DIR_CHOI_DATA):
 
 # !!important
 def generate_sa_data(working_dir=constants.WORKING_DIR_SA_DATA,
-                     tok_dir=constants.SA_TOK_DIR, coarse_labels=False):
+                     tok_dir=constants.SA_TOK_DIR):
     """Generate SA-bAbI data matrices and save in working dir
 
     Args:
@@ -178,7 +178,7 @@ def generate_sa_data(working_dir=constants.WORKING_DIR_SA_DATA,
     vocab_mapping = get_vocab_mapping(instances)
     num_instances, max_numlines, max_linelen = get_data_dimensions(instances)
     instances_mat, labels_mat = get_example_matrices(instances, labels)
-    partition = get_partition(num_instances)
+    partition = get_partition(num_instances, 0.9)
     print("Done.")
 
     print_data_stats(instances, labels, vocab_mapping, partition, paths=paths)
@@ -194,7 +194,7 @@ def generate_true_c_sa_data(working_dir=constants.WORKING_DIR_SA_DATA,
 
     Args:
         working_dir (str): path to dir to save data
-        coarse_labels (bool): if True, then convert to just safe/unsafe
+        tok_dir (str): path where token files are located
     """
     print("Generating examples...")
     instances, labels, paths = get_examples(tok_dir)
@@ -222,35 +222,30 @@ def generate_true_c_sa_data(working_dir=constants.WORKING_DIR_SA_DATA,
     print("Done.")
 
 def get_vocab_mapping_from_model(instances, labels, vocab_mapping):
-    """Convert examples to 0-padded numpy arrays
+    """Get vocab mapping from trained model's vocab mapping
+       And convert examples to 0-padded numpy arrays
 
         Args:
             instances (list): as returned from get_examples()
             labels (list): as returned from get_examples()
+            vocab_mapping(dict): load from the trained model vocab.pkl
 
         Returns:
             instances_mat (np.ndarray) [num_examples, max_numlines, max_linelen]
             labels_mat (np.ndarray) [num_examples, max_numlines]
-                labels_mat[i][j] is the i-th CWE121 C example, j-th line
-                    0 for "no label" if that example did not have max num lines
-                    1 if it is not labeled as CWE121,
-                    2 if it is labeled as CWE121
+                labels_mat[i][j] is the i-th C example, j-th line
         """
     train_dir = constants.WORKING_DIR_SA_DATA
     train_instances_mat = np.load(os.path.join(train_dir, INSTANCE_FNAME))
     num_instances = len(instances)
     max_numlines, max_linelen = train_instances_mat.shape[1], train_instances_mat.shape[2]
 
-    instances_mat = np.zeros((num_instances, max_numlines, max_linelen),
-                             dtype='int32')
+    instances_mat = np.zeros((num_instances, max_numlines, max_linelen), dtype='int32')
     labels_mat = np.zeros((num_instances, max_numlines), dtype='int32')
 
     # word mapping, with rank-3 padding
     for instance_idx, instance in enumerate(instances):
-        #line_idx = 0
         for line_idx, line in enumerate(instance):
-            #if raw_line_idx<= 10 :
-                #continue
             for tok_idx, tok in enumerate(line):
                 try:
                     instances_mat[instance_idx][line_idx][tok_idx] = vocab_mapping[tok]
@@ -262,7 +257,6 @@ def get_vocab_mapping_from_model(instances, labels, vocab_mapping):
 
     print(instances_mat)
     return instances_mat, labels_mat
-
 
 
 def print_data_stats(instances, labels, vocab_mapping, partition, paths=None):
@@ -626,7 +620,7 @@ def get_vocab_mapping(instances):
     """
     vocab = [word for instance in instances
              for line in instance for word in line]
-    vocab = sorted(list(set(vocab)))
+    vocab = sorted(list(set(vocab)), key=lambda x: (x.isdigit(), x.isalpha(), len(x), x))
     vocab_mapping = {word: idx + 1 for idx, word in enumerate(vocab)}
     return vocab_mapping
 

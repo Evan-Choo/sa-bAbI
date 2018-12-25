@@ -1,5 +1,5 @@
 # sa-bAbI: An automated software assurance code dataset generator
-#
+# 
 # Copyright 2018 Carnegie Mellon University. All Rights Reserved.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
@@ -17,7 +17,7 @@
 # [DISTRIBUTION STATEMENT A] This material has been approved for
 # public release and unlimited distribution. Please see Copyright
 # notice for non-US Government use and distribution.
-#
+# 
 # Carnegie Mellon (R) and CERT (R) are registered in the U.S. Patent
 # and Trademark Office by Carnegie Mellon University.
 #
@@ -33,9 +33,9 @@
 #     cppcheck team.
 # 5. Python 3.6 (https://docs.python.org/3/license.html) Copyright
 #     2018 Python Software Foundation.
-#
+# 
 # DM18-0995
-#
+# 
 """juliet_memnet.py: minimal working example memory network on Juliet"""
 from keras.engine.topology import Layer
 from keras.models import Model, Sequential
@@ -168,9 +168,29 @@ class PositionEncode(Layer):
         # removes the 2-axis
         return input_shape[:2] + input_shape[2 + 1:]
 
+# from keras import initializers
+# class BiasLayer(Layer):
+#
+#     def __init__(self, **kwargs):
+#         super(BiasLayer, self).__init__(**kwargs)
+#
+#     def build(self, input_shape):
+#         print(input_shape)
+#         self.bias = self.add_weight(
+#             name='{}_T'.format(self.name),
+#             shape=input_shape[1],
+#             initializer=initializers.RandomNormal(),
+#             trainable=True
+#         )
+#
+#         super(BiasLayer, self).build(input_shape)
+#
+#     def call(self, x):
+#         return x + self.bias
+
 
 def get_model():
-    num_hops = 3
+    num_hops = 4
     num_final_dense_layers = 0
     use_position_encoding = True
     use_internal_layer = True
@@ -189,14 +209,42 @@ def get_model():
         Input to this layer is shape (None, num_lines, line_maxlen)
         Output of this layer is shape (None, num_lines, embed_dimension)
         """
-        encoder = Sequential()
-        # (None, story_maxlen, story_maxlinelen, embed_dim)
-        encoder.add(Embedding(vocab_size, embed_dim))
-        if use_position_encoding:
-            encoder.add(PositionEncode())
-        else:
-            encoder.add(BowEncode())
-        encoder.add(Dropout(0.3))
+        # encoder = Sequential()
+        # # (None, story_maxlen, story_maxlinelen, embed_dim)
+        # encoder.add(Embedding(vocab_size, embed_dim))
+        # if use_position_encoding:
+        #     encoder.add(PositionEncode())
+        # else:
+        #     encoder.add(BowEncode())
+        # encoder.add(Dropout(0.3))
+        def encoder(input):
+            encoder = Embedding(vocab_size, embed_dim)(input)
+            if use_position_encoding:
+                encoder = PositionEncode()(encoder)
+            else:
+                encoder = BowEncode()(encoder)
+
+            encoder = Dropout(0.3)(encoder)
+            return encoder
+        # class Encoder:
+        #     def __init__(self):
+        #         self.emb = Embedding(vocab_size, embed_dim)
+        #         self.pe = PositionEncode()
+        #         self.boe = BowEncode()
+        #         # self.dense = Dense(embed_dim)
+        #         self.drop = Dropout(0.3)
+        #         # self.bias = BiasLayer()
+        #     def __call__(self, input):
+        #         encoder = self.emb(input)
+        #         if use_position_encoding:
+        #             encoder = self.pe(encoder)
+        #         else:
+        #             encoder = self.boe(encoder)
+        #         # encoder = self.dense(encoder)
+        #         encoder = self.drop(encoder)
+        #         # encoder = self.bias(encoder)
+        #         return encoder
+        # encoder = Encoder()
         return encoder
 
     input_encoder_val = get_encoder(embed_dim)
@@ -208,9 +256,11 @@ def get_model():
     # (None, story_maxlen, embed_dim)
     input_encoded_addr = input_encoder_addr(input_lines)
     # (None, 1, embed_dim)
-    query_encoded = input_encoder_addr(query_line)
+    query_encoded = input_encoder_addr(query_line)  # 也是进行encode操作
 
     query = query_encoded
+
+    # input_ecdr = get_encoder(embed_dim)(input_lines)
 
     for _ in range(num_hops):
         # (None, story_maxlen, 1)
@@ -222,10 +272,14 @@ def get_model():
         # (None, story_maxlen, 1)
         atten = Permute((2, 1))(atten)
 
+        # output_ecdr = get_encoder(embed_dim)(input_lines)
+
         # (None, embed_dim, 1)
         response = dot([atten, input_encoded_val], 0)
         # (None, embed_dim)
         response = Reshape((embed_dim,))(response)
+
+        # input_ecdr = output_ecdr
 
         if use_internal_layer:
             # internal learnable layer
@@ -234,7 +288,15 @@ def get_model():
         if use_batch_normalization:
             response = BatchNormalization()(response)
 
-        query = add([query, response])
+        query = Reshape((embed_dim,))(query)
+        # query = Dense(128, use_bias=True)(query)
+        # query = Dropout(0.5)(query)
+        query = Dense(embed_dim)(query)  # u_k' = Hu_k
+        query = BatchNormalization()(query)
+        query = Reshape((1, embed_dim))(query)
+
+        query = add([query, response])  # u_(k+1) = u_k' + s
+        query = BatchNormalization()(query)
 
     for _ in range(num_final_dense_layers):
         response = Dense(embed_dim)(response)
