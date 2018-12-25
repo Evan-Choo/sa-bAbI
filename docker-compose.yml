@@ -7,6 +7,7 @@ services:
     build: ./sa_babi
     volumes:
       - "${DATA_DIR}:/mnt/data"
+      - "./sa_babi:/sa_babi"
 
   juliet:
     build: ./juliet

@@ -1,5 +1,5 @@
 # sa-bAbI: An automated software assurance code dataset generator
-# 
+#
 # Copyright 2018 Carnegie Mellon University. All Rights Reserved.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
@@ -17,7 +17,7 @@
 # [DISTRIBUTION STATEMENT A] This material has been approved for
 # public release and unlimited distribution. Please see Copyright
 # notice for non-US Government use and distribution.
-# 
+#
 # Carnegie Mellon (R) and CERT (R) are registered in the U.S. Patent
 # and Trademark Office by Carnegie Mellon University.
 #
@@ -33,9 +33,9 @@
 #     cppcheck team.
 # 5. Python 3.6 (https://docs.python.org/3/license.html) Copyright
 #     2018 Python Software Foundation.
-# 
+#
 # DM18-0995
-# 
+#
 """constants.py: Constants for dl-vuln pipeline"""
 # import os
 from os import pardir, makedirs
@@ -50,7 +50,8 @@ WORKING_DIR = join( ROOT_DIR,  'working')
 WORKING_DIR_CHOI_DATA = None
 WORKING_DIR_JULIET_DATA = None
 # Specify training data here
-WORKING_DIR_SA_DATA = join(WORKING_DIR, 'sa-train-1000/')
+#WORKING_DIR_SA_DATA = join(WORKING_DIR, 'sa-train-1000/')
+WORKING_DIR_SA_DATA = join(WORKING_DIR, 'sa-train-10000/')
 
 # Used in the arXiv paper
 CHOI_DATA_DIR = None
@@ -79,7 +80,7 @@ VALIDATION_WORKING_SUBDIRS = [
 ]
 VALIDATION_MODELS_PARENT_DIR = WORKING_DIR
 VALIDATION_MODELS_SUBDIRS = [
-    'sa-train-1000/models' # Note same as what was just trained for  this case.
+    'sa-train-10000/models' # Note same as what was just trained for  this case.
 ]
 VALIDATION_PREDICS_PARENT_DIR = WORKING_DIR
 VALIDATION_PREDICS_SUBDIRS = [

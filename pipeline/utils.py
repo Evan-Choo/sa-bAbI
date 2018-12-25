@@ -1,5 +1,5 @@
 # sa-bAbI: An automated software assurance code dataset generator
-# 
+#
 # Copyright 2018 Carnegie Mellon University. All Rights Reserved.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
@@ -17,7 +17,7 @@
 # [DISTRIBUTION STATEMENT A] This material has been approved for
 # public release and unlimited distribution. Please see Copyright
 # notice for non-US Government use and distribution.
-# 
+#
 # Carnegie Mellon (R) and CERT (R) are registered in the U.S. Patent
 # and Trademark Office by Carnegie Mellon University.
 #
@@ -33,9 +33,9 @@
 #     cppcheck team.
 # 5. Python 3.6 (https://docs.python.org/3/license.html) Copyright
 #     2018 Python Software Foundation.
-# 
+#
 # DM18-0995
-# 
+#
 "utils.py: data pipeline utilities for deep learning/vuln LENS"""
 import json
 import os
@@ -78,7 +78,7 @@ EMPTY_LINE_STR = "<empty>"
 # simple tokenization
 NAN_STR = "<nan>"
 
-
+# never used
 def generate_data(working_dir=constants.WORKING_DIR_JULIET_DATA):
     """Generate Juliet CWE121 data matrices and save in working dir
 
@@ -100,7 +100,7 @@ def generate_data(working_dir=constants.WORKING_DIR_JULIET_DATA):
               working_dir=working_dir)
     print("Done.")
 
-
+# never used
 def generate_choi_data(working_dir=constants.WORKING_DIR_CHOI_DATA):
     """Generate Choi data matrices and save in working dir
 
@@ -143,9 +143,9 @@ def generate_choi_data(working_dir=constants.WORKING_DIR_CHOI_DATA):
               working_dir=working_dir)
     print("Done.")
 
-
+# !!important
 def generate_sa_data(working_dir=constants.WORKING_DIR_SA_DATA,
-                      coarse_labels=False):
+                     tok_dir=constants.SA_TOK_DIR, coarse_labels=False):
     """Generate SA-bAbI data matrices and save in working dir
 
     Args:
@@ -153,8 +153,9 @@ def generate_sa_data(working_dir=constants.WORKING_DIR_SA_DATA,
         coarse_labels (bool): if True, then convert to just safe/unsafe
     """
     print("Generating examples...")
-    instances, labels, paths = get_examples(constants.SA_TOK_DIR)
+    instances, labels, paths = get_examples(tok_dir)
 
+    '''
     # determine whether this is tautological-only
     unique_elements = set(lab for line in labels for lab in line)
     tautonly_elements = [
@@ -166,6 +167,8 @@ def generate_sa_data(working_dir=constants.WORKING_DIR_SA_DATA,
         remapping = {4: 2, 5:3}
         labels = [[remapping[lab] if lab in remapping else lab
                    for lab in example] for example in labels]
+    '''
+
 
     # Relabel "body" == "other" so they'll both be background/excluded
     # this will cause the labels in numpy matrices to disagree with
@@ -184,6 +187,82 @@ def generate_sa_data(working_dir=constants.WORKING_DIR_SA_DATA,
     save_data(instances_mat, labels_mat, vocab_mapping, partition, paths,
               working_dir=working_dir)
     print("Done.")
+
+def generate_true_c_sa_data(working_dir=constants.WORKING_DIR_SA_DATA,
+                     tok_dir=constants.SA_TOK_DIR, coarse_labels=False):
+    """Generate SA-bAbI data matrices and save in working dir
+
+    Args:
+        working_dir (str): path to dir to save data
+        coarse_labels (bool): if True, then convert to just safe/unsafe
+    """
+    print("Generating examples...")
+    instances, labels, paths = get_examples(tok_dir)
+    # Relabel "body" == "other" so they'll both be background/excluded
+    # this will cause the labels in numpy matrices to disagree with
+    # the metadata labels output from generate.py -metadata
+    labels = [[max(lab - 1, 0) for lab in example] for example in labels]
+
+    train_dir = constants.WORKING_DIR_SA_DATA
+    # load train mapping dict
+    with open(os.path.join(train_dir, VOCAB_FNAME), 'rb') as handle:
+        vocab_mapping = pickle.load(handle)
+
+    # get the vocab mapping of instances from model mapping dict
+    instances_mat, labels_mat = get_vocab_mapping_from_model(instances, labels, vocab_mapping)
+    num_instances, _, _ = get_data_dimensions(instances)
+    partition = get_partition(num_instances)
+    print("Done.")
+
+    print_data_stats(instances, labels, vocab_mapping, partition, paths=paths)
+
+    print("Saving data...")
+    save_data(instances_mat, labels_mat, vocab_mapping, partition, paths,
+              working_dir=working_dir)
+    print("Done.")
+
+def get_vocab_mapping_from_model(instances, labels, vocab_mapping):
+    """Convert examples to 0-padded numpy arrays
+
+        Args:
+            instances (list): as returned from get_examples()
+            labels (list): as returned from get_examples()
+
+        Returns:
+            instances_mat (np.ndarray) [num_examples, max_numlines, max_linelen]
+            labels_mat (np.ndarray) [num_examples, max_numlines]
+                labels_mat[i][j] is the i-th CWE121 C example, j-th line
+                    0 for "no label" if that example did not have max num lines
+                    1 if it is not labeled as CWE121,
+                    2 if it is labeled as CWE121
+        """
+    train_dir = constants.WORKING_DIR_SA_DATA
+    train_instances_mat = np.load(os.path.join(train_dir, INSTANCE_FNAME))
+    num_instances = len(instances)
+    max_numlines, max_linelen = train_instances_mat.shape[1], train_instances_mat.shape[2]
+
+    instances_mat = np.zeros((num_instances, max_numlines, max_linelen),
+                             dtype='int32')
+    labels_mat = np.zeros((num_instances, max_numlines), dtype='int32')
+
+    # word mapping, with rank-3 padding
+    for instance_idx, instance in enumerate(instances):
+        #line_idx = 0
+        for line_idx, line in enumerate(instance):
+            #if raw_line_idx<= 10 :
+                #continue
+            for tok_idx, tok in enumerate(line):
+                try:
+                    instances_mat[instance_idx][line_idx][tok_idx] = vocab_mapping[tok]
+                except KeyError as e:
+                    print(e)
+                    instances_mat[instance_idx][line_idx][tok_idx] = 0
+            labels_mat[instance_idx][line_idx] = labels[instance_idx][line_idx]
+            line_idx += 1
+
+    print(instances_mat)
+    return instances_mat, labels_mat
+
 
 
 def print_data_stats(instances, labels, vocab_mapping, partition, paths=None):
@@ -207,7 +286,7 @@ def print_data_stats(instances, labels, vocab_mapping, partition, paths=None):
         print("\t" + str(labels[inst_idx][idx]) +
               " " + str(instances[inst_idx][idx]))
 
-
+# !!important
 def get_example_matrices(instances, labels):
     """Convert examples to 0-padded numpy arrays
 
@@ -241,7 +320,7 @@ def get_example_matrices(instances, labels):
 
     return instances_mat, labels_mat
 
-
+# !!important
 def get_examples(tok_data_dir, test=False, num_examples=None,
                  use_annotated=True, add_line_num=True, juliet_labels=False):
     """Get all C examples of CWE121
@@ -325,7 +404,7 @@ def get_examples(tok_data_dir, test=False, num_examples=None,
         this_instance = []
         for idx, line in enumerate(lines):
             # keep only nonempty lines
-            if line:
+            if line and idx > 10:
                 if add_line_num:
                     # add line number
                     line = [(LINE_FMT_STR % idx)] + line
@@ -342,8 +421,10 @@ def get_examples(tok_data_dir, test=False, num_examples=None,
         else:
             c_filepath = os.path.join(tok_data_dir, '..', 'src', c_filename)
             tags = get_sa_tags(c_filepath)
+            # TODO: 修改移除的语句数
             # remove first tag--for `#include` line which is removed!
-            tags = tags[1:]
+            #tags = tags[1:]
+            tags = tags[10:]
             this_label = [tag.value for tag in tags]
             labels.append(this_label)
 
@@ -352,7 +433,7 @@ def get_examples(tok_data_dir, test=False, num_examples=None,
 
     return instances, labels, paths
 
-
+# never used
 def get_juliet_label(vuln_lines_dict, c_filename, lines):
     """
     Args:
@@ -381,7 +462,7 @@ def get_juliet_label(vuln_lines_dict, c_filename, lines):
 
     return this_label
 
-
+# never used
 def get_choi_examples(tok_file, lab_file, replace_badchar=False):
     """Get Choi2017 dataset instances
 
@@ -457,7 +538,7 @@ def get_choi_examples(tok_file, lab_file, replace_badchar=False):
 
     return instances, labels
 
-
+# !!important
 def save_data(instances_mat, labels_mat, vocab_mapping, partition, paths,
               working_dir=constants.WORKING_DIR):
     """Save matrices and vocab dict as .npy files
@@ -487,7 +568,7 @@ def save_data(instances_mat, labels_mat, vocab_mapping, partition, paths,
         with open(os.path.join(working_dir, fname), 'wb') as handle:
             pickle.dump(data_obj, handle)
 
-
+# !!important
 def load_data(working_dir=constants.WORKING_DIR):
     """Load saved data matrices and vocab dict
 
@@ -517,7 +598,7 @@ def load_data(working_dir=constants.WORKING_DIR):
 
     return instances_mat, labels_mat, vocab_mapping, partition, paths
 
-
+# never used
 def get_label_counts(labels_mat):
     """Get dict of label counts
 
@@ -567,7 +648,7 @@ def get_data_dimensions(instances):
 
     return num_instances, max_numlines, max_linelen
 
-
+# never used
 def simp_tok_to_lines(tok_file, include_header=False):
     """Convert simple token file (*.c.simp) to list of lines
 
@@ -631,7 +712,7 @@ def ann_tok_to_lines(tok_file):
     funids = [funids[key] for key in sorted(funids.keys())]
     return lines, funids
 
-
+# never used
 def get_vuln_lines():
     """Get a dict of all the Juliet vuln lines at once
 
@@ -682,7 +763,7 @@ def get_partition(num_instances, train_frac=0.8):
     }
     return partition
 
-
+# never used
 def get_tok_line(instance_line, vocab_mapping, as_str=True):
     """Get tokens for this instance line, for debug
 
@@ -730,7 +811,8 @@ def get_sa_tags(src_file):
     with open(src_file, 'r') as f:
         content = f.read()
     lines = content.split("\n")
-    tag_strs = [itm.split("Tag.")[1] for itm in lines]
+    tag_strs = [itm.split("Tag.")[1].strip() for itm in lines
+                if len(itm.split("Tag."))>1]
     tags = [Tag[itm] for itm in tag_strs]
     return tags
 

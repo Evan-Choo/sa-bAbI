@@ -33,7 +33,7 @@ dependencies:
   - mako=1.0.7=py_1
   - markdown=2.6.11=py_0
   - markupsafe=1.0=py36h470a237_1
-#  - matplotlib=3.0.0=py36h45c993b_1
+  - matplotlib=3.0.0=py36h45c993b_1
   - mkl_fft=1.0.6=py36_0
   - mkl_random=1.0.1=py36_0
   - ncurses=6.1=hfc679d8_1
@@ -67,7 +67,8 @@ dependencies:
   - intel-openmp=2019.0=118
   - libgfortran=3.0.1=h93005f0_2
   - libopenblas=0.3.3=hdc02c5d_3
-  - mkl=2019.0=118
+  #- mkl=2019.0=118
+  - mkl=2018.0.3
   - numpy=1.15.2=py36h6a91979_0
   - numpy-base=1.15.2=py36h8a80b8c_0
   - scikit-learn=0.20.0=py36h4f467ca_1

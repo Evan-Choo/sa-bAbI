@@ -1,5 +1,5 @@
 # sa-bAbI: An automated software assurance code dataset generator
-# 
+#
 # Copyright 2018 Carnegie Mellon University. All Rights Reserved.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
@@ -17,7 +17,7 @@
 # [DISTRIBUTION STATEMENT A] This material has been approved for
 # public release and unlimited distribution. Please see Copyright
 # notice for non-US Government use and distribution.
-# 
+#
 # Carnegie Mellon (R) and CERT (R) are registered in the U.S. Patent
 # and Trademark Office by Carnegie Mellon University.
 #
@@ -33,9 +33,9 @@
 #     cppcheck team.
 # 5. Python 3.6 (https://docs.python.org/3/license.html) Copyright
 #     2018 Python Software Foundation.
-# 
+#
 # DM18-0995
-# 
+#
 
 """train.py: train memory network on juliet"""
 import os
@@ -92,6 +92,11 @@ def run_experiments(num_experiments=10, models_dir=None):
     y_true = np.argmax(val_labels_mat, axis=1)
 
     cnf_matrices = np.zeros((num_experiments, num_classes, num_classes))
+    f1_scores = np.zeros((num_experiments, num_classes))
+    accuracy_scores = np.zeros((num_experiments, num_classes))
+    precision_scores = np.zeros((num_experiments, num_classes))
+    recall_scores = np.zeros((num_experiments, num_classes))
+
 
     for experiment_num in range(num_experiments):
         print("=====Beginning experiment %s of %s=====" %
@@ -109,16 +114,34 @@ def run_experiments(num_experiments=10, models_dir=None):
             validation_data=data_generator.generate_balanced(
                 partition['validation']),
             validation_steps=validation_steps,
-            epochs=30)
+            epochs=18)
 
         # predict
         predics = model.predict([val_instances_mat, val_queries_mat])
+        print(predics)
         predics = np.argmax(predics, axis=1)
+        print(predics)
 
         # metrics
         cnf_matrix = sklearn.metrics.confusion_matrix(y_true, predics)
+        accuracy_score = sklearn.metrics.accuracy_score(y_true, predics)
+        precision_score = sklearn.metrics.precision_score(y_true, predics,
+                                                        average='weighted')
+        recall_score = sklearn.metrics.recall_score(y_true, predics,
+                                                    average='weighted')
+        f1_score = sklearn.metrics.f1_score(y_true, predics,
+                                            average='weighted')
+
         print(cnf_matrix)
+        print(accuracy_score)
+        print(precision_score)
+        print(recall_score)
+        print(f1_score)
         cnf_matrices[experiment_num] = cnf_matrix
+        accuracy_scores[experiment_num] = accuracy_score
+        precision_scores[experiment_num] = precision_score
+        recall_scores[experiment_num] = recall_score
+        f1_scores[experiment_num] = f1_score
 
         # save model
         if models_dir:
@@ -135,6 +158,14 @@ def run_experiments(num_experiments=10, models_dir=None):
     print(np.mean(cnf_matrices, axis=0))
     print("Confusion matrix standard deviation:")
     print(np.std(cnf_matrices, axis=0))
+    print("accuracy score mean:")
+    print(np.mean(accuracy_scores))
+    print("precision score mean:")
+    print(np.mean(precision_scores))
+    print("recall score mean:")
+    print(np.mean(recall_scores))
+    print("F1 score mean:")
+    print(np.mean(f1_scores))
 
 
 run_experiments(num_experiments=10, models_dir=constants.MODELS_DIR)

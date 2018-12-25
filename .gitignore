@@ -1,0 +1,21 @@
+# Mac
+.DS_Store
+*/.DS_Store
+*/**/.DS_Store
+
+# Ignore thumbnails created by windows
+Thumbs.db
+
+
+# Ignore python compiled files
+*.pyc
+*/*.pyc
+*/**/*.pyc
+
+
+# Ignore files built by pyCharm
+.idea/
+
+# Ignore generated src,token
+working/sa-train-10000/src
+working/sa-train-10000/tokens

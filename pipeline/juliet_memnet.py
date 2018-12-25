@@ -1,5 +1,5 @@
 # sa-bAbI: An automated software assurance code dataset generator
-# 
+#
 # Copyright 2018 Carnegie Mellon University. All Rights Reserved.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
@@ -17,7 +17,7 @@
 # [DISTRIBUTION STATEMENT A] This material has been approved for
 # public release and unlimited distribution. Please see Copyright
 # notice for non-US Government use and distribution.
-# 
+#
 # Carnegie Mellon (R) and CERT (R) are registered in the U.S. Patent
 # and Trademark Office by Carnegie Mellon University.
 #
@@ -33,9 +33,9 @@
 #     cppcheck team.
 # 5. Python 3.6 (https://docs.python.org/3/license.html) Copyright
 #     2018 Python Software Foundation.
-# 
+#
 # DM18-0995
-# 
+#
 """juliet_memnet.py: minimal working example memory network on Juliet"""
 from keras.engine.topology import Layer
 from keras.models import Model, Sequential
@@ -60,7 +60,7 @@ import datagen
 #                constants.WORKING_DIR_JULIET_DATA
 working_dir = constants.WORKING_DIR_SA_DATA
 
-utils.generate_sa_data() # Hack to generate data
+#utils.generate_sa_data() # Hack to generate data
 instances_mat, labels_mat, vocab_mapping, partition, _ = utils.load_data(
         working_dir=working_dir)
 

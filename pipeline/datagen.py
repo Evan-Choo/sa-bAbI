@@ -1,5 +1,5 @@
 # sa-bAbI: An automated software assurance code dataset generator
-# 
+#
 # Copyright 2018 Carnegie Mellon University. All Rights Reserved.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
@@ -17,7 +17,7 @@
 # [DISTRIBUTION STATEMENT A] This material has been approved for
 # public release and unlimited distribution. Please see Copyright
 # notice for non-US Government use and distribution.
-# 
+#
 # Carnegie Mellon (R) and CERT (R) are registered in the U.S. Patent
 # and Trademark Office by Carnegie Mellon University.
 #
@@ -33,9 +33,9 @@
 #     cppcheck team.
 # 5. Python 3.6 (https://docs.python.org/3/license.html) Copyright
 #     2018 Python Software Foundation.
-# 
+#
 # DM18-0995
-# 
+#
 """datagen.py: keras data generators supply training/validation examples
 As in https://stanford.edu/~shervine/blog/
          keras-how-to-generate-data-on-the-fly.html
@@ -50,6 +50,9 @@ except ImportError:
     import constants
 import utils
 
+# the number of sa_tag except for BODY and OTHER tags
+SA_TAG_NUM = 10
+
 
 class DataGenerator(object):
     """Generator to yield samples for Keras training/validation
@@ -58,7 +61,7 @@ class DataGenerator(object):
     small enough that it's fine. The point of this is to modularize
     yielding batches. If we get memory errors when loading, try
     reimplementing __data_generation() with np.load().
-    
+
     Args:
         batch_size (int)
         shuffle (bool)
@@ -100,6 +103,7 @@ class DataGenerator(object):
         self.labels_mat = labels_mat
         self.vocab_mapping = vocab_mapping
 
+    # _test call
     def generate(self, list_ids):
         """Generate batch of samples
 
@@ -138,6 +142,7 @@ class DataGenerator(object):
                 else:
                     yield self.__gen_samples_full(batch_ids)
 
+    # important
     def generate_balanced(self, list_ids):
         """Generate batch of samples s.t. batch has equal class distribution
 
@@ -165,7 +170,7 @@ class DataGenerator(object):
         for label in self.unique_labels:
             instance_idx, line_idx = np.where(part_labels_mat == label)
             class_idx[label] = np.stack([instance_idx, line_idx], axis=1)
-        
+
         while 1:
             for label in class_idx:
                 np.random.shuffle(class_idx[label])
@@ -185,7 +190,7 @@ class DataGenerator(object):
                 label_idx = batch_idx // self.num_classes % len(label_examples)
                 label_coords = class_idx[label][label_idx]
                 instance_idx, line_idx = label_coords[0], label_coords[1]
-                
+
                 batch_instances_mat[batch_idx] = (
                     part_instances_mat[instance_idx])
                 batch_queries_mat[batch_idx] = (
@@ -200,6 +205,7 @@ class DataGenerator(object):
 
             yield([batch_instances_mat, batch_queries_mat], batch_labels_mat)
 
+    # validate call
     def get_samples(self, list_ids):
         """Get all samples for these instance IDs ((instance, query), label)
         Not as a generator, just as 3 arrays
@@ -256,6 +262,7 @@ class DataGenerator(object):
 
         return [instances_mat, queries_mat], labels_mat
 
+    # validate call
     def get_sound_samples(self, list_ids):
         """Get all sound samples for these instance IDs ((instance, query), label)
         Not as a generator, just as 3 arrays
@@ -318,6 +325,63 @@ class DataGenerator(object):
 
         return [instances_mat, queries_mat], labels_mat
 
+    # testC call
+    def get_test_c_samples(self, list_ids):
+        """Get all samples for these instance IDs ((instance, query), label)
+        Not as a generator, just as 3 arrays
+
+        Args:
+            list_ids (list of int): list of sample IDs
+
+        Returns: tuple
+                instances_mat (np.ndarray)
+                    [num_instances, max_numlines, max_linelen]
+                queries_mat (np.ndarray):
+                    [num_instances, 1, max_linelen]
+                labels_mat (np.ndarray):
+                    [num_instances, num_classes] (one-hot)
+        """
+        # get data subset for this partition
+        part_instances_mat = self.instances_mat[list_ids]
+        part_labels_mat = self.labels_mat[list_ids]
+
+        # indexes of each class in this partition
+        # key: label
+        # value: array arr such that every row is (instance_idx, line_idx)
+        #     s.t. labels_mat[arr[i, 0], arr[i, 1]] == label
+        class_idx = dict()
+        for label in self.unique_labels:
+            instance_idx, line_idx = np.where(part_labels_mat == label)
+            class_idx[label] = np.stack([instance_idx, line_idx], axis=1)
+
+        num_instances = sum(arr.shape[0] for arr in class_idx.values())
+
+        instances_mat = np.zeros(
+            (num_instances, self.max_numlines, self.max_linelen), dtype='int32')
+        queries_mat = np.zeros(
+            (num_instances, 1, self.max_linelen), dtype='int32')
+        labels_mat = np.zeros(
+            (num_instances, SA_TAG_NUM), dtype='int32')
+
+        # index of each instance in result arrays
+        res_idx = 0
+        for label, arr in class_idx.items():
+            if self.exclude_bg:
+                # need classes to start at 0 for to_categorical
+                label = label - 1
+
+            for instance_idx, line_idx in arr:
+                instances_mat[res_idx] = part_instances_mat[instance_idx]
+                queries_mat[res_idx] = part_instances_mat[instance_idx,
+                                                          line_idx]
+
+                labels_mat[res_idx] = keras.utils.to_categorical(
+                    label, num_classes=SA_TAG_NUM)
+
+                res_idx += 1
+
+        return [instances_mat, queries_mat], labels_mat
+
     def get_num_batches(self, num_samples):
         """Get number of batches
 
@@ -363,7 +427,7 @@ class DataGenerator(object):
               one-hot array
         """
         batch_instances_mat = self.instances_mat[batch_ids]
-        
+
         # choose a random query line from this sample
         query_idxes = np.random.randint(self.max_numlines,
                                         size=self.batch_size)
@@ -481,4 +545,4 @@ def _test():
     _test_gen_balanced(batch_size, list_ids, instances_shape, working_dir)
 
 
-# _test() # This relies on npy stuff not yet created. 
+# _test() # This relies on npy stuff not yet created.

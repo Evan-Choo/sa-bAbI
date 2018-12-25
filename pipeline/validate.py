@@ -1,5 +1,5 @@
 # sa-bAbI: An automated software assurance code dataset generator
-# 
+#
 # Copyright 2018 Carnegie Mellon University. All Rights Reserved.
 #
 # NO WARRANTY. THIS CARNEGIE MELLON UNIVERSITY AND SOFTWARE
@@ -17,7 +17,7 @@
 # [DISTRIBUTION STATEMENT A] This material has been approved for
 # public release and unlimited distribution. Please see Copyright
 # notice for non-US Government use and distribution.
-# 
+#
 # Carnegie Mellon (R) and CERT (R) are registered in the U.S. Patent
 # and Trademark Office by Carnegie Mellon University.
 #
@@ -33,9 +33,9 @@
 #     cppcheck team.
 # 5. Python 3.6 (https://docs.python.org/3/license.html) Copyright
 #     2018 Python Software Foundation.
-# 
+#
 # DM18-0995
-# 
+#
 """validate.py: validate memory network models"""
 
 import os
@@ -154,6 +154,8 @@ def get_separate_predics(predics_subdir, models_dir, val_instances_mat,
             subdir = 'full_val_set'
         path = os.path.join(constants.VALIDATION_PREDICS_PARENT_DIR,
                             subdir, predics_subdir, fname)
+        #path = os.path.join(constants.VALIDATION_PREDICS_PARENT_DIR,
+        #                    predics_subdir, fname)
         if not os.path.exists(path):
             if models is None:
                 models = get_models(models_dir)
@@ -186,6 +188,7 @@ def get_models(models_dir):
             continue
         model = keras.models.load_model(path, custom_objects=custom_objects)
         models.append(model)
+        print(fname)
 
     return models
 
@@ -348,6 +351,7 @@ def evaluate_oneoff(working_dir, models_dir, predics_subdir, make_coarse,
         else:
             fname_fmt = 'predics_{}.npy'
         fname = fname_fmt.format(predic_num)
+        # WARNING: path is wrong
         path = os.path.join(predics_subdir, fname)
         if not os.path.exists(path):
             if models is None:
@@ -452,8 +456,11 @@ def get_memnet_predics(working_dir, models_dir, fnames=None, line_num=None):
         separate_predics = [np.argmax(y_pred, axis=1) for y_pred in
                             separate_predics]
 
-        print("labels: {}".format(y_true))
-        print("predics: {}".format(separate_predics))
+        # Modify by Yiner
+        #print("labels: {}".format(y_true))
+        #print("predics: {}".format(separate_predics))
+        return y_true, separate_predics
+
 
 
 if __name__ == '__main__':
@@ -465,7 +472,13 @@ if __name__ == '__main__':
                               constants.VALIDATION_MODELS_SUBDIRS[-1])
     predics_subdir = os.path.join(constants.VALIDATION_PREDICS_PARENT_DIR,
                                   constants.VALIDATION_PREDICS_SUBDIRS[-1])
-    analyze_train_set_size( do_print_confusions=True )
-    evaluate_oneoff(working_dir, models_dir, predics_subdir,
-                    False, False, False)
-    get_memnet_predics(working_dir, models_dir)
+    #analyze_train_set_size( do_print_confusions=True )
+    #evaluate_oneoff(working_dir, models_dir, predics_subdir,
+    #                False, False, False)
+    labels, predics = get_memnet_predics(working_dir, models_dir)
+    print("Labels are: ")
+    print(labels)
+    predict_count = np.bincount(np.vstack(predics))
+    predict = np.argmax(predict_count)
+    print("Predicts are: ")
+    print(predict)

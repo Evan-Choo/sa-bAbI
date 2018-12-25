@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # sa-bAbI: An automated software assurance code dataset generator
 # 
 # Copyright 2018 Carnegie Mellon University. All Rights Reserved.
@@ -36,6 +37,26 @@
 # 
 # DM18-0995
 # 
-FROM python:3.6.5-stretch
-RUN apt-get update && apt-get -y install python-pip && pip install pyyaml
-#COPY . /sa_babi
+
+if [ "$#" -ne 2 ]; then
+    echo "Usage: sa_e2e.sh <working_dir> <num_instances>"
+    echo "e.g.: sa_e2e.sh ./data 10"
+    exit
+fi
+
+working_dir=$(realpath $1)
+num_instances=$2
+
+mkdir -p $working_dir
+
+echo ++Generating $num_instances files in $working_dir/src...
+begin=$(date +%s)
+./sa_gen_cfiles.sh $working_dir $num_instances
+end=$(date +%s)
+echo Done generating files, took: $(expr $end - $begin) seconds
+
+echo ++Generating tokens in $working_dir/tokens...
+begin=$(date +%s)
+./sa_gen_tokens.sh $working_dir
+end=$(date +%s)
+echo Done, generating tokens took: $(expr $end - $begin) seconds
