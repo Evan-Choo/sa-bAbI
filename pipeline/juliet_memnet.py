@@ -60,7 +60,7 @@ import datagen
 #                constants.WORKING_DIR_JULIET_DATA
 working_dir = constants.WORKING_DIR_SA_DATA
 
-#utils.generate_sa_data() # Hack to generate data
+utils.generate_sa_data() # Hack to generate data
 instances_mat, labels_mat, vocab_mapping, partition, _ = utils.load_data(
         working_dir=working_dir)
 

@@ -11,6 +11,9 @@ Contributors:
 * [YINNNER](https://github.com/YINNNER)
 
 # Quickstart
+
+## Generate sa data
+
 A minimal example to get you an end to end analysis of generated code.
 
 Git clone or unzip the archive and descend into the working directory.
@@ -32,6 +35,13 @@ $ SA_SEED=0 ./sa_e2e.sh working/sa-train-1000 1000
 $ SA_SEED=1 ./sa_e2e.sh working/sa-test-100 100
 ```
 
+or use `./sa_e2e_no_tools.sh` with no tools analyzing, and this will be much faster.
+
+```
+$ SA_SEED=0 ./sa_e2e_no_tools.sh working/sa-train-1000 1000
+$ SA_SEED=1 ./sa_e2e_no_tools.sh working/sa-test-100 100
+```
+
 Within the output directory you will find:
 
 * `alerts/` containing CSV files of the alerts each static analyzer found per file
@@ -44,6 +54,7 @@ Within the output directory you will find:
 * `tool_confusion_matrix_sound.csv` reporting results on the sound subsample of the dataset
 
 ## Deep learning quickstart
+
 Build and activate the conda environment for the deep learning component
 ```
 $ cd pipeline
@@ -63,7 +74,36 @@ $ python train.py
 The current validation script only serves the needs of the arXiv.org paper.
 TODO: Develop a more general validation script.
 
+## Predict true c files
+
+1. predict directly: we have put `models`, `vocal.pkl`, `instances.npy` in `working/sa-train-10000`, these files will be used to predict. You can use them to predict directly.
+
+```
+$ ./sa_gen_tokens.sh working/sa-test-trueC
+$ cd pipeline
+$ source activate sa_babi
+$ python test_trueC.py
+```
+
+2. retrain model and then predict: generate new sa train data and train the model, and then predict.
+
+```
+$ SA_SEED=0 ./sa_e2e_no_tools.sh working/sa-train-10000 10000
+$ cd pipeline
+$ source activate sa_babi
+$ python train.py
+
+$ cd ..
+$ ./sa_gen_tokens.sh working/sa-test-trueC
+$ cd pipeline
+$ source activate sa_babi
+$ python test_trueC.py
+```
+
+
+
 # Docker Infrastructure
+
 This repository, in part, contains an automated system for:
 
 1) Generating source code
@@ -110,6 +150,7 @@ After this script is run, `<working_dir>` will contain:
 The testcases are randomly generated based on a seed. By default, this
 seed is set to a random value, but you can set it to a specific value
 by setting the `SA_SEED` environment variable, e.g.
+
 ```
 SA_SEED=10 bash sa_e2e.sh <working_dir> <num_instances>
 ```
