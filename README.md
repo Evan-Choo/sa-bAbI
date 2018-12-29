@@ -155,6 +155,14 @@ by setting the `SA_SEED` environment variable, e.g.
 SA_SEED=10 bash sa_e2e.sh <working_dir> <num_instances>
 ```
 
+## open source code conversion
+
+Replace the file path of your own token files in filter.py
+
+'''
+file = open('malloc_free_2.c.tok', errors='ignore')
+'''
+
 ## Version 0.1
 
 Initial release
